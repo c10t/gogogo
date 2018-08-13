@@ -14,15 +14,27 @@ type room struct {
 	clients map[*client]bool
 }
 
+func newRoom() *room {
+	return &room{
+		forward: make(chan []byte),
+		join: make(chan *client),
+		leave: make(chan *client),
+		clients: make(map[*client]bool),
+	}
+}
+
 func (r *room) run() {
 	for {
 		select {
 		case client := <-r.join:
+			log.Printf("[INFO] join channel")
 			r.clients[client] = true
 		case client := <-r.leave:
+			log.Printf("[INFO] leave channel")
 			delete(r.clients, client)
 			close(client.send)
 		case msg := <-r.forward:
+			log.Printf("[INFO] send message")
 			for client := range r.clients {
 				select {
 				case client.send <- msg:
@@ -55,8 +67,12 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		send: make(chan []byte, messageBufferSize),
     room: r,
 	}
+	log.Printf("[INFO] send client to room.join")
 	r.join <- client
-	defer func() { r.leave <- client }()
+	defer func() {
+		log.Printf("[INFO] send client to room.leave")
+		r.leave <- client
+	}()
 	go client.write()
 	client.read()
 }
