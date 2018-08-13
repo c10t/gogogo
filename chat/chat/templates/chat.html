@@ -40,8 +40,8 @@
       if (!window["WebSocket"]) {
         alert("ERROR: This browser does not support WebSocket.");
       } else {
-        // temporary run docker with `-p 4000:8080`
-        socket = new WebSocket("ws://localhost:4000/room");
+        // use like `$ ./chat -addr=":3000"`
+        socket = new WebSocket("ws://{{.Host}}/room");
         socket.onclose = function() {
           alert("INFO: Connection closed.");
         }
