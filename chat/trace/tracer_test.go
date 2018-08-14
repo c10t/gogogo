@@ -1,9 +1,9 @@
 package trace
 
-import {
+import (
 	"bytes"
 	"testing"
-}
+)
 
 func TestNew(t *testing.T) {
 	var buf bytes.Buffer
