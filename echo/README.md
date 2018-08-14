@@ -1,10 +1,10 @@
 # note
 
 ## build
-`$ docker build -t chat:latest .`
+`$ docker build -t echo-server:latest .`
 
 ## run
-`$ docker run -it --rm -p 4000:8080 chat`
+`$ docker run -it --rm -p 4000:18888 echo-server`
 
 ## remove image
 - no container uses -> `$ docker image prune`
