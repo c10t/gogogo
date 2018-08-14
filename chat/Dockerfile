@@ -3,6 +3,7 @@ FROM golang:1.7.3 AS build
 WORKDIR /go/src/
 
 ADD chat/ chat
+COPY trace/ trace/
 
 RUN go get -d -v golang.org/x/net/html
 RUN go get -d -v github.com/gorilla/websocket
