@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/c10t/gogogo/chat/trace"
 	"github.com/gorilla/websocket"
 )
 
