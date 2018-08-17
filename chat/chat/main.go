@@ -10,6 +10,9 @@ import (
 	"text/template"
 
 	"github.com/c10t/gogogo/chat/trace"
+	"github.com/stretchr/gomniauth/providers/facebook"
+	"github.com/stretchr/gomniauth/providers/github"
+	"github.com/stretchr/gomniauth/providers/google"
 )
 
 type templateHandler struct {
@@ -28,6 +31,14 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	var addr = flag.String("addr", ":8080", "The address of the application")
 	flag.Parse()
+
+	// setup gomniauth
+	gomniauth.SetSecurityKey("XXXXXXXXXX")
+	gomniauth.WithProviders(
+		facebook.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/facebook")
+		github.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/github")
+		google.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/google")
+	)
 
 	r := newRoom()
 	r.tracer = trace.New(os.Stdout)
