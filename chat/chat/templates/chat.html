@@ -33,7 +33,7 @@
           return false;
         }
 
-        socket.send(msgBox.val());
+        socket.send(JSON.stringify({"Message": msgBox.val()}));
         msgBox.val("write new message.");
         return false;
       });
@@ -47,7 +47,13 @@
           alert("INFO: Connection closed.");
         }
         socket.onmessage = function(e) {
-          messages.append($("<li>").text(e.data));
+          var msg = JSON.parse(e.data);
+          messages.append(
+            $("<li>").append(
+              $("<string>").text(msg.Name + ": "),
+              $("<span>").text(msg.Message)
+            )
+          );
         }
       }
     })

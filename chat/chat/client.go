@@ -8,7 +8,7 @@ import (
 
 type client struct {
 	socket   *websocket.Conn
-	send     chan []byte
+	send     chan *message
 	room     *room
 	userData map[string]interface{}
 }
@@ -18,7 +18,7 @@ func (c *client) read() {
 		var msg *message
 		if err := c.socket.ReadJSON(&msg); err == nil {
 			msg.When = time.Now()
-			mdg.Name = c.userData["name"].(string)
+			msg.Name = c.userData["name"].(string)
 			c.room.forward <- msg
 		} else {
 			break

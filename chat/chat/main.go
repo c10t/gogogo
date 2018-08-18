@@ -10,9 +10,11 @@ import (
 	"text/template"
 
 	"github.com/c10t/gogogo/chat/trace"
+	"github.com/stretchr/gomniauth"
 	"github.com/stretchr/gomniauth/providers/facebook"
 	"github.com/stretchr/gomniauth/providers/github"
 	"github.com/stretchr/gomniauth/providers/google"
+	"github.com/stretchr/objx"
 )
 
 type templateHandler struct {
@@ -31,7 +33,7 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if authCookie, err := r.Cookie("auth"); err == nil {
-    data["UserData"] = objx.MustFromBase64(authCookie.Value)
+		data["UserData"] = objx.MustFromBase64(authCookie.Value)
 	}
 
 	t.templ.Execute(w, r)
@@ -44,9 +46,9 @@ func main() {
 	// setup gomniauth
 	gomniauth.SetSecurityKey("XXXXXXXXXX")
 	gomniauth.WithProviders(
-		facebook.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/facebook")
-		github.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/github")
-		google.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/google")
+		facebook.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/facebook"),
+		github.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/github"),
+		google.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/google"),
 	)
 
 	r := newRoom()
