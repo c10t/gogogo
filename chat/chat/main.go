@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/objx"
 )
 
+// set the active Avatar implementation
 var avatars Avatar = UseFileSystemAvatar
 
 type templateHandler struct {
@@ -53,7 +54,7 @@ func main() {
 		google.New("XXXXXX", "XXXXXX", "http://localhost:8080/auth/callback/google"),
 	)
 
-	r := newRoom(UseFileSystemAvatar)
+	r := newRoom()
 	r.tracer = trace.New(os.Stdout)
 
 	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
