@@ -3,7 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
+
+	"gopkg.in/mgo.v2"
 )
 
 var fatalErr error
@@ -20,4 +23,18 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+
+	log.Println("Connect to MongoDB...")
+	db, err := mgo.Dial("localhost")
+	if err != nil {
+		fatal(err)
+		return
+	}
+
+	defer func() {
+		log.Println("Close connection for MongoDB...")
+		db.Close()
+	}()
+
+	// pollData := db.DB("ballots").C("polls")
 }
