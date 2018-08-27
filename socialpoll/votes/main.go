@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/nsqio/go-nsq"
 	"gopkg.in/mgo.v2"
@@ -33,6 +34,28 @@ func main() {
 	}()
 
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// start the process
+	votes := make(chan string)
+	publisherStoppedChan := publishVotes(votes)
+	twitterStoppedChan := startTwitterStream(stopChan, votes)
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Minute)
+			closeConn()
+			stoplock.Lock()
+			if stop {
+				stoplock.Unlock()
+				break
+			}
+			stoplock.Unlock()
+		}
+	}()
+
+	<-twitterStoppedChan
+	close(votes)
+	<-publisherStoppedChan
 }
 
 var db *mgo.Session
