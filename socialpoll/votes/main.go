@@ -2,12 +2,38 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/nsqio/go-nsq"
 	"gopkg.in/mgo.v2"
 )
 
-func main() {}
+func main() {
+	if err := dialdb(); err != nil {
+		log.Fatalln("Failed to dial MongoDB:", err)
+	}
+	defer closedb()
+
+	var stoplock sync.Mutex
+	stop := false
+	stopChan := make(chan struct{}, 1)
+	signalChan := make(chan os.Signal, 1)
+
+	go func() {
+		<-signalChan
+		stoplock.Lock()
+		stop = true
+		stoplock.Unlock()
+		log.Println("main: stopping...")
+		stopChan <- struct{}{}
+		closeConn()
+	}()
+
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+}
 
 var db *mgo.Session
 
