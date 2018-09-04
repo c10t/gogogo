@@ -37,5 +37,3 @@ func SetVar(r *http.Request, key string, value interface{}) {
 	vars[r][key] = value
 	varsLock.Unlock()
 }
-
-func main() {}
