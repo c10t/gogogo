@@ -1,12 +1,34 @@
 package main
 
 import (
+	"flag"
+	"log"
 	"net/http"
 
 	"gopkg.in/mgo.v2"
 )
 
-func main() {}
+func main() {
+	var (
+		addr  = flag.String("addr", ":8080", "Address for Endpoint")
+		mongo = flag.String("mongo", "localhost", "Address for MongoDB")
+	)
+	flag.Parse()
+
+	log.Println("Dialing MongoDB... ", *mongo)
+	db, err := mgo.Dial(*mongo)
+	if err != nil {
+		log.Fatalln("Failed to Connect to MongoDB")
+	}
+	defer db.Close()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/polls/", withCORS(withVars(withData(db, withAPIKey(handlePolls)))))
+
+	log.Println("Starting web server on ", *addr)
+	http.ListenAndServe(":8080", mux)
+	log.Println("Stopping...")
+}
 
 func withAPIKey(fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
