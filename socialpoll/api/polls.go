@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 
 	"gopkg.in/mgo.v2"
@@ -25,6 +24,10 @@ func handlePolls(w http.ResponseWriter, r *http.Request) {
 		return
 	case "DELETE":
 		handlePollsDelete(w, r)
+		return
+	case "OPTIONS":
+		w.Header().Add("Access-Control-Allow-Methods", "DELETE")
+		respond(w, r, http.StatusOK, nil)
 		return
 	}
 
@@ -52,9 +55,37 @@ func handlePollsGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePollsPost(w http.ResponseWriter, r *http.Request) {
-	respondErr(w, r, http.StatusInternalServerError, errors.New("NOT IMPLEMENTED"))
+	db := GetVar(r, "db").(*mgo.Database)
+	c := db.C("polls")
+	var p poll
+	if err := decodeBody(r, &p); err != nil {
+		respondErr(w, r, http.StatusBadRequest, "failed to read poll from request", err)
+		return
+	}
+
+	p.ID = bson.NewObjectId()
+	if err := c.Insert(p); err != nil {
+		respondErr(w, r, http.StatusInternalServerError, "failed to insert poll", err)
+		return
+	}
+
+	w.Header().Set("Location", "polls/"+p.ID.Hex())
+	respond(w, r, http.StatusCreated, nil)
 }
 
 func handlePollsDelete(w http.ResponseWriter, r *http.Request) {
-	respondErr(w, r, http.StatusInternalServerError, errors.New("NOT IMPLEMENTED"))
+	db := GetVar(r, "db").(*mgo.Database)
+	c := db.C("polls")
+	p := NewPath(r.URL.Path)
+	if !p.HasID() {
+		respondErr(w, r, http.StatusMethodNotAllowed, "Cannot delete all polls")
+		return
+	}
+
+	if err := c.RemoveId(bson.ObjectIdHex(p.ID)); err != nil {
+		respondErr(w, r, http.StatusInternalServerError, "failed to delete poll", err)
+		return
+	}
+
+	respond(w, r, http.StatusOK, nil)
 }
