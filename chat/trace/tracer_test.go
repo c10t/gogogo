@@ -8,7 +8,7 @@ import (
 func TestNew(t *testing.T) {
 	var buf bytes.Buffer
 	tracer := New(&buf)
-	if tracer == nil {
+	if tracer.out == nil {
 		t.Error("Return fron New should not be nil")
 	} else {
 		tracer.Trace("Hello trace package.")
@@ -19,6 +19,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestOff(t *testing.T) {
-	var silentTracer Tracer = Off()
+	var silentTracer Tracer
 	silentTracer.Trace("something")
 }
