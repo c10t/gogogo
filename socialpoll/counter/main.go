@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -16,28 +14,20 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var fatalErr error
-
-func fatal(e error) {
-	fmt.Println(e)
-	flag.PrintDefaults()
-	fatalErr = e
-}
-
 const updateDuration = 1 * time.Second
 
 func main() {
-	defer func() {
-		if fatalErr != nil {
-			os.Exit(1)
-		}
-	}()
+	err := counterMain()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
+func counterMain() error {
 	log.Println("Connect to MongoDB...")
 	db, err := mgo.Dial("localhost")
 	if err != nil {
-		fatal(err)
-		return
+		return err
 	}
 
 	defer func() {
@@ -53,8 +43,7 @@ func main() {
 	log.Println("Connect to NSQ...")
 	q, err := nsq.NewConsumer("votes", "counter", nsq.NewConfig())
 	if err != nil {
-		fatal(err)
-		return
+		return err
 	}
 
 	q.AddHandler(nsq.HandlerFunc(func(m *nsq.Message) error {
@@ -71,53 +60,55 @@ func main() {
 	}))
 
 	if err := q.ConnectToNSQLookupd("localhost:4161"); err != nil {
-		fatal(err)
-		return
+		return err
 	}
 
 	log.Println("waiting for vote on NSQ...")
-	var updater *time.Timer
-	updater = time.AfterFunc(updateDuration, func() {
+
+	ticker := time.NewTicker(updateDuration)
+	defer ticker.Stop()
+
+	update := func() {
 		countsLock.Lock()
 		defer countsLock.Unlock()
 
 		if len(counts) == 0 {
 			log.Println("Skip update DB because there is no vote")
-		} else {
-			log.Println("Update DB...")
-			log.Println(counts)
-			ok := true
+			return
+		}
 
-			for option, count := range counts {
-				sel := bson.M{"options": bson.M{"$in": []string{option}}}
-				up := bson.M{"$inc": bson.M{"results." + option: count}}
+		log.Println("Update DB...")
+		log.Println(counts)
+		ok := true
 
-				if _, err := pollData.UpdateAll(sel, up); err != nil {
-					log.Println("failed to update:", err)
-					ok = false
-					continue
-				}
+		for option, count := range counts {
+			sel := bson.M{"options": bson.M{"$in": []string{option}}}
+			up := bson.M{"$inc": bson.M{"results." + option: count}}
+
+			if _, err := pollData.UpdateAll(sel, up); err != nil {
+				log.Println("failed to update:", err)
+				ok = false
+			} else {
 				counts[option] = 0
-			}
-
-			if ok {
-				log.Println("Finish to update DB")
-				counts = nil
 			}
 		}
 
-		updater.Reset(updateDuration)
-	})
+		if ok {
+			log.Println("Finish to update DB")
+			counts = nil
+		}
+	}
 
 	termChan := make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	for {
 		select {
+		case <-ticker.C:
+			update()
 		case <-termChan:
-			updater.Stop()
 			q.Stop()
 		case <-q.StopChan:
-			return // finished
+			return nil // finished
 		}
 	}
 }
